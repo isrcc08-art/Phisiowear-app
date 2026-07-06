@@ -6,26 +6,26 @@
     <title>PHYSIOWEAR Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Fondo Gris Oscuro Profesional */
-        body { background-color: #121212; color: #e0e0e0; font-family: sans-serif; margin: 0; padding: 10px; }
+        /* Fondo casi negro (Azul muy oscuro #00050a) */
+        body { background-color: #00050a; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
         
+        /* Contenedores oscuros */
         .chart-wrapper { 
-            background: #1e1e1e; 
+            background: #000a14; 
             padding: 10px; 
             border-radius: 8px; 
             margin-bottom: 15px; 
-            border: 1px solid #333; 
+            border: 1px solid #001f3f; 
         }
         .chart-container { height: 120px; width: 100%; position: relative; }
         
         .metrics-section { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .metric-box { background: #262626; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #444; }
-        .val { font-size: 18px; font-weight: bold; color: #ffffff; }
-        .label { font-size: 8px; color: #888; text-transform: uppercase; }
+        .metric-box { background: #000f1f; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #00274d; }
+        .val { font-size: 18px; font-weight: bold; }
+        .label { font-size: 8px; color: #555; text-transform: uppercase; }
         
-        button { width: 100%; padding: 12px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
-        #btnConnect { background: #333; color: #fff; border: 1px solid #555; }
-        #btnConnect:active { background: #444; }
+        button { width: 100%; padding: 12px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 10px;}
+        #btnConnect { background: #004080; color: white; }
     </style>
 </head>
 <body>
@@ -43,6 +43,7 @@
     </div>
 
     <script>
+        // Configuración con cuadrícula sutil
         const createChart = (id, color) => new Chart(document.getElementById(id), {
             type: 'line',
             data: { labels: Array(50).fill(''), datasets: [{ data: Array(50).fill(0), borderColor: color, borderWidth: 2, pointRadius: 0 }] },
@@ -50,14 +51,14 @@
                 responsive: true, maintainAspectRatio: false, 
                 scales: { 
                     x: { display: false }, 
-                    y: { min: 0, max: 100, grid: { color: '#333' } } 
+                    y: { min: 0, max: 100, grid: { color: '#001a33' } } 
                 } 
             }
         });
 
-        const ecgChart = createChart('ecgChart', '#ff5252');
-        const ppgChart = createChart('ppgChart', '#40c4ff');
-        const ptChart = createChart('ptChart', '#69f0ae');
+        const ecgChart = createChart('ecgChart', '#ff3333');
+        const ppgChart = createChart('ppgChart', '#33ccff');
+        const ptChart = createChart('ptChart', '#33ff99');
 
         document.getElementById('btnConnect').addEventListener('click', async () => {
             try {
