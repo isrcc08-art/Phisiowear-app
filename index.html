@@ -2,115 +2,73 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PHYSIOWEAR Profesional</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHYSIOWEAR Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { 
-            background-color: #001f3f; 
-            color: #fff; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            margin: 0; 
-            padding: 10px; 
-        }
-        
-        .chart-wrapper { 
-            background: #00274d; 
-            padding: 10px; 
-            border-radius: 8px; 
-            margin-bottom: 15px; 
-            border: 1px solid #00509d; 
-        }
-        .chart-container { height: 110px; width: 100%; position: relative; }
-        
+        body { background-color: #001f3f; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
+        .chart-wrapper { background: #00274d; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #00509d; }
+        .chart-container { height: 120px; width: 100%; position: relative; }
         .metrics-section { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
         .metric-box { background: #003366; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #00509d; }
-        .val { font-size: 18px; font-weight: bold; color: #fff; }
-        .label { font-size: 8px; color: #aaa; text-transform: uppercase; margin-top: 4px; }
-        
-        button { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
+        .val { font-size: 18px; font-weight: bold; }
+        button { width: 100%; padding: 12px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
         #btnConnect { background: #007bff; color: white; }
-        #btnDisconnect { background: #444; color: white; }
-        button:disabled { opacity: 0.5; }
     </style>
 </head>
 <body>
 
     <button id="btnConnect">CONECTAR DISPOSITIVO</button>
-    <button id="btnDisconnect" disabled>DESCONECTAR</button>
 
-    <div class="chart-wrapper">
-        <div class="chart-container"><canvas id="ecgChart"></canvas></div>
-    </div>
-    <div class="chart-wrapper">
-        <div class="chart-container"><canvas id="ppgChart"></canvas></div>
-    </div>
-    <div class="chart-wrapper">
-        <div class="chart-container"><canvas id="ptChart"></canvas></div>
-    </div>
+    <div class="chart-wrapper"><div class="chart-container"><canvas id="ecgChart"></canvas></div></div>
+    <div class="chart-wrapper"><div class="chart-container"><canvas id="ppgChart"></canvas></div></div>
+    <div class="chart-wrapper"><div class="chart-container"><canvas id="ptChart"></canvas></div></div>
 
     <div class="metrics-section">
-        <div class="metric-box"><div class="val" id="valHR">--</div><div class="label">BPM</div></div>
-        <div class="metric-box"><div class="val" id="valSpO2">--</div><div class="label">% SpO2</div></div>
-        <div class="metric-box"><div class="val" id="valRR">--</div><div class="label">RPM</div></div>
+        <div class="metric-box"><div class="val" id="valHR">--</div><small>BPM</small></div>
+        <div class="metric-box"><div class="val" id="valSpO2">--</div><small>%</small></div>
+        <div class="metric-box"><div class="val" id="valRR">--</div><small>RPM</small></div>
     </div>
 
     <script>
-        // Configuración de Gráficas con Ejes y Leyendas
-        const createChart = (id, color, label) => new Chart(document.getElementById(id), {
+        const createChart = (id, color) => new Chart(document.getElementById(id), {
             type: 'line',
-            data: { 
-                labels: Array(50).fill(''), 
-                datasets: [{ label: label, data: Array(50).fill(0), borderColor: color, borderWidth: 2, pointRadius: 0, tension: 0.4 }] 
-            },
+            data: { labels: Array(50).fill(''), datasets: [{ data: Array(50).fill(0), borderColor: color, borderWidth: 2, pointRadius: 0 }] },
             options: { 
-                responsive: true, maintainAspectRatio: false, animation: false, 
-                scales: { 
-                    x: { grid: { color: '#00509d' }, ticks: { display: false } }, 
-                    y: { grid: { color: '#00509d' }, ticks: { color: '#fff', font: { size: 9 } } } 
-                }, 
-                plugins: { legend: { labels: { color: '#fff', font: { size: 10 } } } } 
+                responsive: true, maintainAspectRatio: false, 
+                scales: { x: { display: false }, y: { min: -100, max: 100, grid: { color: '#00509d' } } } 
             }
         });
 
-        const ecgChart = createChart('ecgChart', '#ff4444', '⚡ ECG');
-        const ppgChart = createChart('ppgChart', '#00bfff', '🩸 SpO2');
-        const ptChart = createChart('ptChart', '#00ff7f', '🫁 RESPIRACIÓN');
-
-        // Bluetooth
-        const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
-        const CHARACTERISTIC_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
-        let bleCharacteristic;
+        const ecgChart = createChart('ecgChart', '#ff4444');
+        const ppgChart = createChart('ppgChart', '#00bfff');
+        const ptChart = createChart('ptChart', '#00ff7f');
 
         document.getElementById('btnConnect').addEventListener('click', async () => {
             try {
-                const device = await navigator.bluetooth.requestDevice({ 
-                    filters: [{ services: [SERVICE_UUID] }] 
-                });
+                const device = await navigator.bluetooth.requestDevice({ filters: [{ services: ['4fafc201-1fb5-459e-8fcc-c5c9c331914b'] }] });
                 const server = await device.gatt.connect();
-                const service = await server.getPrimaryService(SERVICE_UUID);
-                bleCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
-                await bleCharacteristic.startNotifications();
+                const service = await server.getPrimaryService('4fafc201-1fb5-459e-8fcc-c5c9c331914b');
+                const char = await service.getCharacteristic('beb5483e-36e1-4688-b7f5-ea07361b26a8');
+                await char.startNotifications();
                 
-                bleCharacteristic.addEventListener('characteristicvaluechanged', (e) => {
-                    const data = new TextDecoder().decode(e.target.value).split(',');
-                    if (data.length >= 5) {
+                char.addEventListener('characteristicvaluechanged', (e) => {
+                    const raw = new TextDecoder().decode(e.target.value);
+                    console.log("Raw:", raw); // <--- MIRA ESTO EN LA CONSOLA
+                    const d = raw.split(',');
+                    if (d.length >= 5) {
                         [ecgChart, ppgChart, ptChart].forEach((c, i) => {
-                            c.data.datasets[0].data.push(parseFloat(data[i]));
+                            c.data.datasets[0].data.push(parseFloat(d[i]));
                             c.data.datasets[0].data.shift();
                             c.update();
                         });
-                        document.getElementById('valHR').innerText = data[3];
-                        document.getElementById('valSpO2').innerText = data[2];
-                        document.getElementById('valRR').innerText = data[4];
+                        document.getElementById('valHR').innerText = d[3];
+                        document.getElementById('valSpO2').innerText = d[2];
+                        document.getElementById('valRR').innerText = d[4];
                     }
                 });
-                document.getElementById('btnConnect').disabled = true;
-                document.getElementById('btnDisconnect').disabled = false;
-            } catch (err) { alert("Error: " + err); }
+            } catch (err) { alert(err); }
         });
-
-        document.getElementById('btnDisconnect').addEventListener('click', () => location.reload());
     </script>
 </body>
 </html>
