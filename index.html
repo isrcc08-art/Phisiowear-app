@@ -6,14 +6,26 @@
     <title>PHYSIOWEAR Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #001f3f; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
-        .chart-wrapper { background: #00274d; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #00509d; }
+        /* Fondo casi negro (Azul muy oscuro #00050a) */
+        body { background-color: #00050a; color: #fff; font-family: sans-serif; margin: 0; padding: 10px; }
+        
+        /* Contenedores oscuros */
+        .chart-wrapper { 
+            background: #000a14; 
+            padding: 10px; 
+            border-radius: 8px; 
+            margin-bottom: 15px; 
+            border: 1px solid #001f3f; 
+        }
         .chart-container { height: 120px; width: 100%; position: relative; }
+        
         .metrics-section { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
-        .metric-box { background: #003366; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #00509d; }
+        .metric-box { background: #000f1f; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #00274d; }
         .val { font-size: 18px; font-weight: bold; }
-        button { width: 100%; padding: 12px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
-        #btnConnect { background: #007bff; color: white; }
+        .label { font-size: 8px; color: #555; text-transform: uppercase; }
+        
+        button { width: 100%; padding: 12px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 10px;}
+        #btnConnect { background: #004080; color: white; }
     </style>
 </head>
 <body>
@@ -25,24 +37,28 @@
     <div class="chart-wrapper"><div class="chart-container"><canvas id="ptChart"></canvas></div></div>
 
     <div class="metrics-section">
-        <div class="metric-box"><div class="val" id="valHR">--</div><small>BPM</small></div>
-        <div class="metric-box"><div class="val" id="valSpO2">--</div><small>%</small></div>
-        <div class="metric-box"><div class="val" id="valRR">--</div><small>RPM</small></div>
+        <div class="metric-box"><div class="val" id="valHR">--</div><div class="label">BPM</div></div>
+        <div class="metric-box"><div class="val" id="valSpO2">--</div><div class="label">% SpO2</div></div>
+        <div class="metric-box"><div class="val" id="valRR">--</div><div class="label">RPM</div></div>
     </div>
 
     <script>
+        // Configuración con cuadrícula sutil
         const createChart = (id, color) => new Chart(document.getElementById(id), {
             type: 'line',
             data: { labels: Array(50).fill(''), datasets: [{ data: Array(50).fill(0), borderColor: color, borderWidth: 2, pointRadius: 0 }] },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
-                scales: { x: { display: false }, y: { min: -100, max: 100, grid: { color: '#00509d' } } } 
+                scales: { 
+                    x: { display: false }, 
+                    y: { min: 0, max: 100, grid: { color: '#001a33' } } 
+                } 
             }
         });
 
-        const ecgChart = createChart('ecgChart', '#ff4444');
-        const ppgChart = createChart('ppgChart', '#00bfff');
-        const ptChart = createChart('ptChart', '#00ff7f');
+        const ecgChart = createChart('ecgChart', '#ff3333');
+        const ppgChart = createChart('ppgChart', '#33ccff');
+        const ptChart = createChart('ptChart', '#33ff99');
 
         document.getElementById('btnConnect').addEventListener('click', async () => {
             try {
@@ -53,9 +69,7 @@
                 await char.startNotifications();
                 
                 char.addEventListener('characteristicvaluechanged', (e) => {
-                    const raw = new TextDecoder().decode(e.target.value);
-                    console.log("Raw:", raw); // <--- MIRA ESTO EN LA CONSOLA
-                    const d = raw.split(',');
+                    const d = new TextDecoder().decode(e.target.value).split(',');
                     if (d.length >= 5) {
                         [ecgChart, ppgChart, ptChart].forEach((c, i) => {
                             c.data.datasets[0].data.push(parseFloat(d[i]));
@@ -67,7 +81,7 @@
                         document.getElementById('valRR').innerText = d[4];
                     }
                 });
-            } catch (err) { alert(err); }
+            } catch (err) { alert("Error: " + err); }
         });
     </script>
 </body>
