@@ -1,92 +1,53 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PHYSIOWEAR Mobile</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { background-color: #000; color: #fff; font-family: -apple-system, sans-serif; margin: 0; padding: 15px; }
-        h2 { font-size: 14px; margin: 10px 0; color: #ccc; text-align: center; }
-        .chart-container { height: 120px; width: 100%; margin-bottom: 20px; }
-        .metrics-section { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .metric-box { background: #1a1a1a; padding: 10px; border-radius: 12px; text-align: center; }
-        .val { font-size: 20px; font-weight: bold; color: #fff; }
-        .label { font-size: 9px; color: #888; text-transform: uppercase; }
-        button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: bold; margin-bottom: 5px; cursor: pointer; }
-        #btnConnect { background: #007bff; color: white; }
-        #btnDisconnect { background: #444; color: white; }
-        button:disabled { opacity: 0.3; }
-    </style>
-</head>
-<body>
+<script>
+    // 1. Configuración de Gráficas (Mismo que antes)
+    const createChart = (id, color) => new Chart(document.getElementById(id), {
+        type: 'line',
+        data: { labels: Array(50).fill(''), datasets: [{ data: Array(50).fill(0), borderColor: color, borderWidth: 2, pointRadius: 0, tension: 0.4 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: {display: false}, y: {display: false} }, plugins: { legend: {display: false} } }
+    });
 
-    <button id="btnConnect">CONECTAR DISPOSITIVO</button>
-    <button id="btnDisconnect" disabled>DESCONECTAR</button>
+    const ecgChart = createChart('ecgChart', '#ff4444');
+    const ppgChart = createChart('ppgChart', '#00bfff');
+    const ptChart = createChart('ptChart', '#00ff7f');
 
-    <h2>Frecuencia Cardíaca (LPM)</h2>
-    <div class="chart-container"><canvas id="ecgChart"></canvas></div>
+    // 2. Lógica Bluetooth simplificada
+    const btnConnect = document.getElementById('btnConnect');
+    const btnDisconnect = document.getElementById('btnDisconnect');
 
-    <h2>Oximetría (%)</h2>
-    <div class="chart-container"><canvas id="ppgChart"></canvas></div>
+    btnConnect.addEventListener('click', async () => {
+        console.log("Intentando conectar...");
+        try {
+            // Solicitud de dispositivo
+            const device = await navigator.bluetooth.requestDevice({
+                filters: [{ services: ['4fafc201-1fb5-459e-8fcc-c5c9c331914b'] }]
+            });
 
-    <h2>Frecuencia Respiratoria</h2>
-    <div class="chart-container"><canvas id="ptChart"></canvas></div>
+            console.log("Dispositivo seleccionado:", device.name);
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService('4fafc201-1fb5-459e-8fcc-c5c9c331914b');
+            const characteristic = await service.getCharacteristic('beb5483e-36e1-4688-b7f5-ea07361b26a8');
+            
+            await characteristic.startNotifications();
+            
+            characteristic.addEventListener('characteristicvaluechanged', (event) => {
+                const value = new TextDecoder().decode(event.target.value);
+                console.log("Datos recibidos:", value);
+                const data = value.split(',');
+                if (data.length >= 5) {
+                    // Actualizar UI
+                    document.getElementById('valHR').innerText = data[3];
+                    document.getElementById('valSpO2').innerText = data[2];
+                    document.getElementById('valRR').innerText = data[4];
+                    // Actualizar gráficas (data[0]=ecg, data[1]=ppg, data[4]=pt)
+                    // ... (lógica de updateCharts)
+                }
+            });
 
-    <div class="metrics-section">
-        <div class="metric-box"><div class="val" id="valHR">--</div><div class="label">BPM</div></div>
-        <div class="metric-box"><div class="val" id="valSpO2">--</div><div class="label">% SpO2</div></div>
-        <div class="metric-box"><div class="val" id="valRR">--</div><div class="label">RPM</div></div>
-    </div>
-
-    <script>
-        // 1. Configuración de Gráficas
-        const createChart = (id, color) => new Chart(document.getElementById(id), {
-            type: 'line',
-            data: { labels: Array(50).fill(''), datasets: [{ data: Array(50).fill(0), borderColor: color, borderWidth: 2, pointRadius: 0, tension: 0.4 }] },
-            options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: {display: false}, y: {display: false} }, plugins: { legend: {display: false} } }
-        });
-
-        const ecgChart = createChart('ecgChart', '#ff4444');
-        const ppgChart = createChart('ppgChart', '#00bfff');
-        const ptChart = createChart('ptChart', '#00ff7f');
-
-        // 2. Lógica Bluetooth
-        const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
-        const CHARACTERISTIC_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
-        let bleCharacteristic;
-
-        document.getElementById('btnConnect').addEventListener('click', async () => {
-            try {
-                const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: [SERVICE_UUID] });
-                const server = await device.gatt.connect();
-                const service = await server.getPrimaryService(SERVICE_UUID);
-                bleCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
-                await bleCharacteristic.startNotifications();
-                
-                bleCharacteristic.addEventListener('characteristicvaluechanged', (e) => {
-                    const data = new TextDecoder().decode(e.target.value).split(',');
-                    if (data.length >= 5) {
-                        // Actualizar gráficas
-                        [ecgChart, ppgChart, ptChart].forEach((c, i) => {
-                            c.data.datasets[0].data.push(parseFloat(data[i]));
-                            c.data.datasets[0].data.shift();
-                            c.update();
-                        });
-                        // Actualizar valores numéricos
-                        document.getElementById('valHR').innerText = data[3];
-                        document.getElementById('valSpO2').innerText = data[2];
-                        document.getElementById('valRR').innerText = data[4];
-                    }
-                });
-                document.getElementById('btnConnect').disabled = true;
-                document.getElementById('btnDisconnect').disabled = false;
-            } catch (err) { alert("Error: " + err); }
-        });
-
-        document.getElementById('btnDisconnect').addEventListener('click', () => {
-            location.reload(); // Recarga simple para cerrar sesión BLE
-        });
-    </script>
-</body>
-</html>
+            btnConnect.disabled = true;
+            btnDisconnect.disabled = false;
+        } catch (error) {
+            console.error("Error crítico:", error);
+            alert("No se pudo conectar: " + error.message);
+        }
+    });
+</script>
