@@ -6,21 +6,32 @@
     <title>PHYSIOWEAR Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #121212; color: #333; font-family: sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
-        .panel { background-color: #ffffff; border-radius: 12px; padding: 15px; border: 1px solid #eee; }
-        h2 { font-size: 14px; text-align: center; margin: 0 0 10px 0; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        /* Fondo principal azul muy oscuro */
+        body { 
+            background-color: #00050a; 
+            color: #e0e0e0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; 
+            padding: 10px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+        }
+        
+        /* Paneles con el mismo color de fondo para integración */
+        .panel { background-color: #00050a; border-radius: 12px; padding: 15px; border: 1px solid #002244; }
+        h2 { font-size: 14px; text-align: center; margin: 0 0 10px 0; color: #888; border-bottom: 1px solid #002244; padding-bottom: 5px; }
         
         button { width: 100%; padding: 15px; margin: 5px 0; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
-        #btnConnect { background-color: #007bff; color: white; } 
-        #btnDisconnect { background-color: #dc3545; color: white; }
+        #btnConnect { background-color: #004080; color: white; } 
+        #btnDisconnect { background-color: #5a1a1a; color: white; }
         
-        /* Cuadrícula de 3 valores ahora */
         .metrics-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-        .metric { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; }
+        .metric { text-align: center; padding: 10px; background: #00050a; border-radius: 8px; border: 1px solid #002244; }
         .metric-title { font-size: 8px; font-weight: bold; color: #666; text-transform: uppercase; }
-        .metric-value { font-size: 16px; font-weight: bold; margin-top: 5px; }
+        .metric-value { font-size: 16px; font-weight: bold; margin-top: 5px; color: #fff; }
         
-        .chart-wrapper { background: #fff; padding: 8px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 10px; }
+        .chart-wrapper { background: #00050a; padding: 8px; border-radius: 8px; border: 1px solid #002244; margin-bottom: 10px; }
         .chart-container { height: 80px; width: 100%; position: relative; }
     </style>
 </head>
@@ -41,15 +52,15 @@
     <div class="panel">
         <h2>SEÑALES EN TIEMPO REAL</h2>
         <div class="chart-wrapper">
-            <div class="metric-title">RESPIRACIÓN (PT)</div>
+            <div class="metric-title" style="color:#666;">RESPIRACIÓN (PT)</div>
             <div class="chart-container"><canvas id="ptChart"></canvas></div>
         </div>
         <div class="chart-wrapper">
-            <div class="metric-title">FOTOPLETISMOGRAFÍA (PPG)</div>
+            <div class="metric-title" style="color:#666;">FOTOPLETISMOGRAFÍA (PPG)</div>
             <div class="chart-container"><canvas id="ppgChart"></canvas></div>
         </div>
         <div class="chart-wrapper">
-            <div class="metric-title">ELECTROCARDIOGRAMA (ECG)</div>
+            <div class="metric-title" style="color:#666;">ELECTROCARDIOGRAMA (ECG)</div>
             <div class="chart-container"><canvas id="ecgChart"></canvas></div>
         </div>
     </div>
@@ -58,7 +69,11 @@
         const createChart = (id, color) => new Chart(document.getElementById(id), {
             type: 'line',
             data: { labels: Array(50).fill(''), datasets: [{ data: Array(50).fill(0), borderColor: color, borderWidth: 1.5, pointRadius: 0, tension: 0.4 }] },
-            options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: false }, y: { grid: { color: '#eee' }, ticks: { display: false } } }, plugins: { legend: { display: false } } }
+            options: { 
+                responsive: true, maintainAspectRatio: false, animation: false, 
+                scales: { x: { display: false }, y: { grid: { color: '#002244' }, ticks: { display: false } } }, 
+                plugins: { legend: { display: false } } 
+            }
         });
 
         const ptChart = createChart('ptChart', '#ff9900');
@@ -76,16 +91,14 @@
                 char.addEventListener('characteristicvaluechanged', (e) => {
                     const d = new TextDecoder().decode(e.target.value).split(',');
                     if (d.length >= 5) {
-                        // Actualizar gráficas (i=0->ecg, i=1->ppg, i=2->pt)
                         [ecgChart, ppgChart, ptChart].forEach((c, i) => {
                             c.data.datasets[0].data.push(parseFloat(d[i]));
                             c.data.datasets[0].data.shift();
                             c.update();
                         });
-                        // Actualizar textos
                         document.getElementById('valHR').innerText = d[3];
                         document.getElementById('valSpO2').innerText = d[2];
-                        document.getElementById('valRR').innerText = d[4]; // Aquí está el valor de RR
+                        document.getElementById('valRR').innerText = d[4];
                     }
                 });
                 document.getElementById('btnConnect').disabled = true;
